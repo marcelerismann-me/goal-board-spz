@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Goal Board — Marcel Erismann</title>
+  <style>
+    /* ── TOKENS ──────────────────────────────────────────────────── */
+    :root {
+      --bg:           #F2F2F7;
+      --surface:      #FFFFFF;
+      --surface2:     #F9F9FB;
+      --border:       #E5E5EA;
+      --border-lt:    #F2F2F7;
+      --label:        #1C1C1E;
+      --label2:       #3C3C43;
+      --label3:       #8E8E93;
+      --label4:       #C7C7CC;
+      --blue:         #007AFF;
+      --blue-lt:      #EAF2FF;
+      --green:        #34C759;
+      --green-lt:     #E8FAF0;
+      --orange:       #FF9500;
+      --orange-lt:    #FFF4E0;
+      --red:          #FF3B30;
+      --red-lt:       #FFEDEC;
+      --purple:       #5856D6;
+      --purple-lt:    #EEEEFF;
+      --r-sm:         8px;
+      --r-md:         12px;
+      --r-lg:         16px;
+      --shadow:       0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:    0 4px 16px rgba(0,0,0,.1);
+    }
+
+    /* ── RESET ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--label);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { cursor: pointer; font-family: inherit; }
+    input, textarea, select { font-family: inherit; }
+    a { color: var(--blue); text-decoration: none; }
+
+    /* ── LAYOUT ──────────────────────────────────────────────────── */
+    .wrap    { max-width: 820px; margin: 0 auto; padding: 0 20px 80px; }
+    .section { margin-top: 32px; }
+
+    /* ── TOPBAR ──────────────────────────────────────────────────── */
+    .topbar {
+      background: rgba(255,255,255,.88);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-inner {
+      max-width: 820px; margin: 0 auto;
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .topbar-left h1 {
+      font-size: 1.05rem; font-weight: 700;
+      letter-spacing: -.02em; color: var(--label);
+    }
+    .topbar-left .sub {
+      font-size: .75rem; color: var(--label3);
+      margin-top: 1px; letter-spacing: .01em;
+    }
+    .sprint-badge {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sprint-label {
+      font-size: .78rem; font-weight: 600;
+      color: var(--label3); white-space: nowrap;
+    }
+    .sprint-bar-wrap {
+      width: 100px; height: 5px;
+      background: var(--border);
+      border-radius: 99px; overflow: hidden;
+    }
+    .sprint-bar-fill {
+      height: 100%; background: var(--blue);
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+    .sprint-pct {
+      font-size: .75rem; font-weight: 700;
+      color: var(--blue); min-width: 32px; text-align: right;
+    }
+
+    /* ── SECTION HEADER ──────────────────────────────────────────── */
+    .sec-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sec-title {
+      font-size: .72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--label3);
+    }
+
+    /* ── BTN ─────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 14px;
+      border-radius: var(--r-sm);
+      font-size: .83rem; font-weight: 600;
+      border: none; cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { opacity: .88; }
+    .btn-ghost {
+      background: transparent; color: var(--blue);
+      border: 1.5px solid var(--blue);
+    }
+    .btn-ghost:hover { background: var(--blue-lt); }
+    .btn-sm { padding: 5px 10px; font-size: .78rem; }
+    .btn-icon {
+      background: none; border: none;
+      color: var(--label3); font-size: 1rem;
+      padding: 4px 6px; border-radius: 6px;
+      transition: background .15s, color .15s;
+    }
+    .btn-icon:hover { background: var(--bg); color: var(--label); }
+
+    /* ── CARD ────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* ── PRIORITY STRIP ──────────────────────────────────────────── */
+    .priority-list { display: flex; flex-direction: column; gap: 8px; }
+    .priority-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 16px;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+    }
+    .priority-card:hover { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-lt); }
+    .priority-rank {
+      font-size: 1rem; font-weight: 800; color: var(--blue);
+      min-width: 22px; text-align: center;
+    }
+    .priority-body { flex: 1; min-width: 0; }
+    .priority-title {
+      font-size: .95rem; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .priority-value {
+      font-size: .78rem; color: var(--label3); margin-top: 2px;
+    }
+    .priority-for {
+      font-size: .73rem; font-weight: 600;
+      background: var(--blue-lt); color: var(--blue);
+      padding: 2px 8px; border-radius: 20px;
+      white-space: nowrap;
+    }
+    .priority-prog {
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    .prog-ring-wrap { position: relative; width: 36px; height: 36px; }
+    .prog-ring-wrap svg { transform: rotate(-90deg); }
+    .prog-ring-text {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .65rem; font-weight: 700; color: var(--blue);
+    }
+    .priority-card.done-card { opacity: .55; }
+    .priority-card.done-card .priority-rank { color: var(--green); }
+    .priority-card.done-card .priority-for { background: var(--green-lt); color: var(--green); }
+
+    /* ── STATUS PILL ─────────────────────────────────────────────── */
+    .pill {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: .72rem; font-weight: 700;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+    .pill-open     { background: var(--border-lt); color: var(--label3); border: 1px solid var(--border); }
+    .pill-progress { background: var(--orange-lt); color: var(--orange); }
+    .pill-done     { background: var(--green-lt);  color: var(--green);  }
+    .pill-blocked  { background: var(--red-lt);    color: var(--red);    }
+
+    /* ── PROJECT LIST ────────────────────────────────────────────── */
+    .project-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .project-card.is-priority { border-left: 3px solid var(--blue); }
+
+    .project-head {
+      padding: 16px 18px 14px;
+      display: flex; align-items: flex-start; gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .project-head:hover { background: var(--surface2); }
+
+    .project-expand {
+      font-size: .75rem; color: var(--label4);
+      margin-top: 3px; transition: transform .2s;
+      flex-shrink: 0;
+    }
+    .project-card.open .project-expand { transform: rotate(90deg); }
+
+    .project-info { flex: 1; min-width: 0; }
+    .project-title-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 5px;
+    }
+    .project-title {
+      font-size: 1rem; font-weight: 700;
+    }
+    .project-meta {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; margin-bottom: 8px;
+    }
+    .meta-item {
+      display: flex; align-items: center; gap: 4px;
+      font-size: .76rem; color: var(--label3);
+    }
+    .meta-label {
+      font-weight: 700; color: var(--label3);
+      text-transform: uppercase; font-size: .65rem; letter-spacing: .04em;
+    }
+    .meta-value { color: var(--label2); }
+
+    .project-prog-row {
+      display: flex; align-items: center; gap: 8px; margin-top: 6px;
+    }
+    .prog-bar-wrap {
+      flex: 1; height: 4px;
+      background: var(--border); border-radius: 99px; overflow: hidden;
+    }
+    .prog-bar-fill {
+      height: 100%; border-radius: 99px;
+      transition: width .4s ease;
+    }
+    .prog-bar-fill.c-open     { background: var(--label4); }
+    .prog-bar-fill.c-progress { background: var(--orange); }
+    .prog-bar-fill.c-done     { background: var(--green); }
+    .prog-count {
+      font-size: .72rem; font-weight: 700; color: var(--label3);
+      white-space: nowrap;
+    }
+
+    .project-actions {
+      display: flex; align-items: center; gap: 6px;
+      flex-shrink: 0; align-self: flex-start;
+    }
+
+    /* ── TASK LIST ───────────────────────────────────────────────── */
+    .task-list {
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+    .project-card.open .task-list { display: block; }
+
+    .task-item {
+      padding: 11px 18px 11px 44px;
+      border-bottom: 1px solid var(--border-lt);
+      display: flex; align-items: flex-start; gap: 10px;
+      transition: background .12s;
+      position: relative;
+    }
+    .task-item:last-of-type { border-bottom: none; }
+    .task-item:hover { background: var(--surface2); }
+
+    .task-check {
+      position: absolute; left: 18px; top: 14px;
+      width: 17px; height: 17px;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, background .15s;
+      background: white;
+    }
+    .task-check.checked {
+      background: var(--green); border-color: var(--green);
+    }
+    .task-check.checked::after {
+      content: "✓";
+      font-size: .65rem; color: #fff; font-weight: 800;
+    }
+    .task-check.inprogress { border-color: var(--orange); }
+    .task-check.inprogress::after {
+      content: "●";
+      font-size: .5rem; color: var(--orange);
+    }
+
+    .task-body { flex: 1; min-width: 0; }
+    .task-title {
+      font-size: .88rem; font-weight: 600;
+    }
+    .task-title.done-text {
+      text-decoration: line-through; color: var(--label3);
+    }
+    .task-value {
+      font-size: .75rem; color: var(--label3); margin-top: 2px;
+    }
+    .task-for {
+      font-size: .7rem; font-weight: 600;
+      background: var(--purple-lt); color: var(--purple);
+      padding: 1px 6px; border-radius: 20px;
+      display: inline-block; margin-top: 4px;
+    }
+    .task-right {
+      display: flex; align-items: center; gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .task-add-row {
+      padding: 12px 18px;
+      border-top: 1px dashed var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .task-quick-input {
+      flex: 1; border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 7px 10px;
+      font-size: .85rem; color: var(--label);
+      background: var(--surface2); outline: none;
+    }
+    .task-quick-input:focus { border-color: var(--blue); background: #fff; }
+    .task-quick-input::placeholder { color: var(--label4); }
+
+    /* ── FILTER BAR ──────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 5px 12px; border-radius: 20px;
+      font-size: .78rem; font-weight: 600;
+      border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--label3);
+      cursor: pointer; transition: all .15s;
+    }
+    .filter-btn.active {
+      background: var(--label); color: #fff; border-color: var(--label);
+    }
+    .filter-btn:hover:not(.active) { border-color: var(--label3); color: var(--label); }
+
+    /* ── EMPTY ───────────────────────────────────────────────────── */
+    .empty-state {
+      padding: 40px 24px; text-align: center;
+      color: var(--label3); font-size: .88rem;
+    }
+    .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+
+    /* ── MODAL ───────────────────────────────────────────────────── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-md);
+      width: 100%; max-width: 480px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-head {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head h3 { font-size: 1rem; font-weight: 700; }
+    .modal-close {
+      background: none; border: none;
+      font-size: 1.4rem; color: var(--label3); cursor: pointer;
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .modal-close:hover { background: var(--bg); }
+    .modal-body { padding: 20px 22px; }
+    .modal-foot {
+      padding: 14px 22px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; gap: 10px;
+    }
+    .modal-foot-right { display: flex; gap: 8px; }
+
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block; font-size: .75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--label3); margin-bottom: 6px;
+    }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 9px 12px;
+      font-size: .9rem; color: var(--label);
+      background: var(--surface2); outline: none;
+      transition: border-color .15s;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: var(--blue); background: #fff;
+    }
+    .field textarea { resize: vertical; min-height: 70px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field-hint { font-size: .75rem; color: var(--label3); margin-top: 4px; }
+
+    /* ── SPRINT SETUP ────────────────────────────────────────────── */
+    .sprint-setup-banner {
+      background: var(--blue-lt);
+      border: 1px solid rgba(0,122,255,.2);
+      border-radius: var(--r-md);
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 20px;
+    }
+    .sprint-setup-banner p {
+      font-size: .85rem; color: var(--blue); flex: 1;
+    }
+
+    /* ── MISC ────────────────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 24px 0; }
+    .text-muted { color: var(--label3); }
+    .text-blue  { color: var(--blue); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--label4); border-radius: 99px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ TOPBAR ═══════════════════════════════════════════════════ -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-left">
+      <h1>Goal Board</h1>
+      <div class="sub">Marcel Erismann &nbsp;·&nbsp; SPZ Nottwil</div>
+    </div>
+    <div class="sprint-badge">
+      <span class="sprint-label" id="sprintLabel">—</span>
+      <div class="sprint-bar-wrap">
+        <div class="sprint-bar-fill" id="sprintBarFill" style="width:0%"></div>
+      </div>
+      <span class="sprint-pct" id="sprintPct">0%</span>
+      <button class="btn-icon" onclick="openSprintModal()" title="Sprint konfigurieren">⚙</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGE ═══════════════════════════════════════════════════════ -->
+<div class="wrap">
+
+  <!-- PRIORITÄTEN -->
+  <div class="section">
+    <div class="sec-head">
+      <span class="sec-title">Top Prioritäten</span>
+    </div>
+    <div class="priority-list" id="priorityList">
+      <div class="empty-state">
+        <div class="empty-icon">★</div>
+        Markiere Projekte als Priorität, um sie hier zu sehen.
+      </div>
+    </div>
+  </div>
+
+  <!-- PROJEKTE -->
+  <div class="section">
+    <div class="sec-head">
+      <span class="sec-title">Projekte &amp; Ziele</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="filter-bar" id="filterBar">
+          <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">Alle</button>
+          <button class="filter-btn" data-filter="in_progress" onclick="setFilter('in_progress')">Laufend</button>
+          <button class="filter-btn" data-filter="open" onclick="setFilter('open')">Offen</button>
+          <button class="filter-btn" data-filter="done" onclick="setFilter('done')">Erledigt</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openProjectModal()">+ Projekt</button>
+      </div>
+    </div>
+    <div class="project-list" id="projectList">
+      <div class="empty-state">
+        <div class="empty-icon">◻</div>
+        Noch keine Projekte. Starte mit <strong>+ Projekt</strong>.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ MODAL: SPRINT ════════════════════════════════════════════ -->
+<div class="overlay" id="sprintOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>12-Wochen Sprint</h3>
+      <button class="modal-close" onclick="closeModal('sprintOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Sprint Startdatum</label>
+        <input type="date" id="sprintStartInput"/>
+        <p class="field-hint">Der Sprint läuft 12 Wochen ab diesem Datum.</p>
+      </div>
+      <div class="field">
+        <label>Sprint Name / Ziel (optional)</label>
+        <input type="text" id="sprintNameInput" placeholder="z.B. Q2 2026 — KIS & Budget"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div></div>
+      <div class="modal-foot-right">
+        <button class="btn btn-ghost" onclick="closeModal('sprintOverlay')">Abbrechen</button>
+        <button class="btn btn-primary" onclick="saveSprint()">Speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: PROJEKT ════════════════════════════════════════════ -->
+<div class="overlay" id="projectOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="projectModalTitle">Neues Projekt</h3>
+      <button class="modal-close" onclick="closeModal('projectOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Projektname *</label>
+        <input type="text" id="pName" placeholder="z.B. KIS Release Q2"/>
+      </div>
+      <div class="field">
+        <label>Wert / Nutzen</label>
+        <input type="text" id="pValue" placeholder="Was verbessert dieses Projekt konkret?"/>
+      </div>
+      <div class="field">
+        <label>Mehrwert für</label>
+        <input type="text" id="pFor" placeholder="z.B. Pflegepersonal, SPZ, Patienten…"/>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Status</label>
+          <select id="pStatus">
+            <option value="open">Offen</option>
+            <option value="in_progress">Laufend</option>
+            <option value="done">Erledigt</option>
+            <option value="blocked">Blockiert</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Priorität</label>
+          <select id="pPriority">
+            <option value="0">— keine —</option>
+            <option value="1">★ Priorität 1</option>
+            <option value="2">★ Priorität 2</option>
+            <option value="3">★ Priorität 3</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-icon" id="pDeleteBtn" onclick="deleteProject()" style="color:var(--red)">🗑 Löschen</button>
+      <div class="modal-foot-right">
+        <button class="btn btn-ghost" onclick="closeModal('projectOverlay')">Abbrechen</button>
+        <button class="btn btn-primary" onclick="saveProject()">Speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: TASK ═══════════════════════════════════════════════ -->
+<div class="overlay" id="taskOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="taskModalTitle">Neuer Task</h3>
+      <button class="modal-close" onclick="closeModal('taskOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Task / Aufgabe *</label>
+        <input type="text" id="tName" placeholder="z.B. Anforderungsanalyse abschliessen"/>
+      </div>
+      <div class="field">
+        <label>Wert / Nutzen</label>
+        <input type="text" id="tValue" placeholder="Was bringt dieser Task konkret?"/>
+      </div>
+      <div class="field">
+        <label>Mehrwert für</label>
+        <input type="text" id="tFor" placeholder="z.B. Entwicklungsteam, Klinik, Prozess…"/>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="tStatus">
+          <option value="open">Offen</option>
+          <option value="in_progress">Laufend</option>
+          <option value="done">Erledigt</option>
+          <option value="blocked">Blockiert</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-icon" id="tDeleteBtn" onclick="deleteTask()" style="color:var(--red)">🗑 Löschen</button>
+      <div class="modal-foot-right">
+        <button class="btn btn-ghost" onclick="closeModal('taskOverlay')">Abbrechen</button>
+        <button class="btn btn-primary" onclick="saveTask()">Speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  DATA
+// ================================================================
+
+const LS_KEY = "goalboard_v2";
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || defaultData(); }
+  catch { return defaultData(); }
+}
+function save(d) { localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+
+function defaultData() {
+  return {
+    sprint: { start: null, name: "" },
+    projects: []
+  };
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+
+// ================================================================
+//  SPRINT
+// ================================================================
+
+function getKW(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day  = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const y1 = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil(((date - y1) / 86400000 + 1) / 7);
+}
+
+function renderSprint() {
+  const data  = load();
+  const sp    = data.sprint;
+  const label = document.getElementById("sprintLabel");
+  const fill  = document.getElementById("sprintBarFill");
+  const pct   = document.getElementById("sprintPct");
+
+  if (!sp.start) {
+    label.textContent = "Sprint nicht konfiguriert";
+    fill.style.width = "0%"; pct.textContent = "";
+    return;
+  }
+
+  const start  = new Date(sp.start);
+  const end    = new Date(start); end.setDate(start.getDate() + 84); // 12 weeks
+  const now    = new Date();
+  const total  = end - start;
+  const elapsed= Math.max(0, Math.min(now - start, total));
+  const p      = Math.round((elapsed / total) * 100);
+
+  const week   = Math.min(12, Math.floor((now - start) / (7 * 86400000)) + 1);
+  const kw     = getKW(now);
+  label.textContent  = `KW ${kw} · Woche ${week}/12${sp.name ? " · "+sp.name : ""}`;
+  fill.style.width   = p + "%";
+  pct.textContent    = p + "%";
+}
+
+function openSprintModal() {
+  const data = load();
+  document.getElementById("sprintStartInput").value = data.sprint.start || "";
+  document.getElementById("sprintNameInput").value  = data.sprint.name  || "";
+  document.getElementById("sprintOverlay").classList.add("open");
+}
+function saveSprint() {
+  const data = load();
+  data.sprint.start = document.getElementById("sprintStartInput").value;
+  data.sprint.name  = document.getElementById("sprintNameInput").value.trim();
+  save(data);
+  closeModal("sprintOverlay");
+  renderSprint();
+}
+
+// ================================================================
+//  FILTERS
+// ================================================================
+
+let activeFilter = "all";
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll(".filter-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.filter === f);
+  });
+  renderProjects();
+}
+
+// ================================================================
+//  PROJECTS
+// ================================================================
+
+let editingProjectId = null;
+
+function openProjectModal(id) {
+  const data = load();
+  editingProjectId = id || null;
+  const modal = document.getElementById("projectModalTitle");
+  const delBtn = document.getElementById("pDeleteBtn");
+  if (id) {
+    const p = data.projects.find(x => x.id === id);
+    if (!p) return;
+    modal.textContent = "Projekt bearbeiten";
+    document.getElementById("pName").value     = p.name;
+    document.getElementById("pValue").value    = p.value || "";
+    document.getElementById("pFor").value      = p.for   || "";
+    document.getElementById("pStatus").value   = p.status;
+    document.getElementById("pPriority").value = String(p.priority || 0);
+    delBtn.style.display = "inline-flex";
+  } else {
+    modal.textContent = "Neues Projekt";
+    document.getElementById("pName").value     = "";
+    document.getElementById("pValue").value    = "";
+    document.getElementById("pFor").value      = "";
+    document.getElementById("pStatus").value   = "open";
+    document.getElementById("pPriority").value = "0";
+    delBtn.style.display = "none";
+  }
+  document.getElementById("projectOverlay").classList.add("open");
+  setTimeout(() => document.getElementById("pName").focus(), 50);
+}
+
+function saveProject() {
+  const name = document.getElementById("pName").value.trim();
+  if (!name) { document.getElementById("pName").focus(); return; }
+  const data = load();
+  const proj = {
+    id:       editingProjectId || uid(),
+    name,
+    value:    document.getElementById("pValue").value.trim(),
+    for:      document.getElementById("pFor").value.trim(),
+    status:   document.getElementById("pStatus").value,
+    priority: parseInt(document.getElementById("pPriority").value) || 0,
+    tasks:    [],
+    open:     false,
+  };
+  if (editingProjectId) {
+    const idx = data.projects.findIndex(x => x.id === editingProjectId);
+    if (idx > -1) { proj.tasks = data.projects[idx].tasks; proj.open = data.projects[idx].open; data.projects[idx] = proj; }
+  } else {
+    data.projects.push(proj);
+  }
+  save(data);
+  closeModal("projectOverlay");
+  render();
+}
+
+function deleteProject() {
+  if (!editingProjectId) return;
+  if (!confirm("Projekt und alle Tasks löschen?")) return;
+  const data = load();
+  data.projects = data.projects.filter(p => p.id !== editingProjectId);
+  save(data);
+  closeModal("projectOverlay");
+  render();
+}
+
+function toggleProject(id) {
+  const data = load();
+  const p = data.projects.find(x => x.id === id);
+  if (p) p.open = !p.open;
+  save(data);
+  renderProjects();
+}
+
+// ================================================================
+//  TASKS
+// ================================================================
+
+let editingTaskId = null;
+let editingTaskProjectId = null;
+
+function openTaskModal(projectId, taskId) {
+  const data = load();
+  editingTaskId        = taskId || null;
+  editingTaskProjectId = projectId;
+  const title  = document.getElementById("taskModalTitle");
+  const delBtn = document.getElementById("tDeleteBtn");
+
+  if (taskId) {
+    const proj = data.projects.find(p => p.id === projectId);
+    const t    = proj && proj.tasks.find(x => x.id === taskId);
+    if (!t) return;
+    title.textContent = "Task bearbeiten";
+    document.getElementById("tName").value   = t.name;
+    document.getElementById("tValue").value  = t.value || "";
+    document.getElementById("tFor").value    = t.for   || "";
+    document.getElementById("tStatus").value = t.status;
+    delBtn.style.display = "inline-flex";
+  } else {
+    title.textContent = "Neuer Task";
+    document.getElementById("tName").value   = "";
+    document.getElementById("tValue").value  = "";
+    document.getElementById("tFor").value    = "";
+    document.getElementById("tStatus").value = "open";
+    delBtn.style.display = "none";
+  }
+  document.getElementById("taskOverlay").classList.add("open");
+  setTimeout(() => document.getElementById("tName").focus(), 50);
+}
+
+function saveTask() {
+  const name = document.getElementById("tName").value.trim();
+  if (!name) { document.getElementById("tName").focus(); return; }
+  const data = load();
+  const proj = data.projects.find(p => p.id === editingTaskProjectId);
+  if (!proj) return;
+  const task = {
+    id:     editingTaskId || uid(),
+    name,
+    value:  document.getElementById("tValue").value.trim(),
+    for:    document.getElementById("tFor").value.trim(),
+    status: document.getElementById("tStatus").value,
+  };
+  if (editingTaskId) {
+    const idx = proj.tasks.findIndex(x => x.id === editingTaskId);
+    if (idx > -1) proj.tasks[idx] = task;
+  } else {
+    proj.tasks.push(task);
+  }
+  save(data);
+  closeModal("taskOverlay");
+  render();
+}
+
+function deleteTask() {
+  if (!editingTaskId || !editingTaskProjectId) return;
+  if (!confirm("Task löschen?")) return;
+  const data = load();
+  const proj = data.projects.find(p => p.id === editingTaskProjectId);
+  if (proj) proj.tasks = proj.tasks.filter(t => t.id !== editingTaskId);
+  save(data);
+  closeModal("taskOverlay");
+  render();
+}
+
+function cycleTaskStatus(projectId, taskId, e) {
+  e.stopPropagation();
+  const data  = load();
+  const proj  = data.projects.find(p => p.id === projectId);
+  const task  = proj && proj.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const cycle = ["open","in_progress","done"];
+  const idx   = cycle.indexOf(task.status);
+  task.status = cycle[(idx + 1) % cycle.length];
+  // sync project status
+  const statuses = proj.tasks.map(t => t.status);
+  if (statuses.every(s => s === "done")) proj.status = "done";
+  else if (statuses.some(s => s === "in_progress")) proj.status = "in_progress";
+  else proj.status = "open";
+  save(data);
+  render();
+}
+
+function addTaskQuick(projectId, inputEl) {
+  const name = inputEl.value.trim();
+  if (!name) return;
+  const data = load();
+  const proj = data.projects.find(p => p.id === projectId);
+  if (!proj) return;
+  proj.tasks.push({ id: uid(), name, value: "", for: "", status: "open" });
+  save(data);
+  inputEl.value = "";
+  render();
+  // reopen
+  const data2 = load();
+  const p2 = data2.projects.find(p => p.id === projectId);
+  if (p2) { p2.open = true; save(data2); render(); }
+}
+
+// ================================================================
+//  RENDER
+// ================================================================
+
+const STATUS_MAP = {
+  open:        { label: "Offen",      cls: "pill-open"     },
+  in_progress: { label: "Laufend",    cls: "pill-progress" },
+  done:        { label: "Erledigt",   cls: "pill-done"     },
+  blocked:     { label: "Blockiert",  cls: "pill-blocked"  },
+};
+
+function escH(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function progressOf(tasks) {
+  if (!tasks.length) return 0;
+  return Math.round(tasks.filter(t => t.status === "done").length / tasks.length * 100);
+}
+
+function progressColor(status) {
+  if (status === "done")        return "c-done";
+  if (status === "in_progress") return "c-progress";
+  return "c-open";
+}
+
+function progressRingHTML(pct, color) {
+  const r = 14; const c = 2 * Math.PI * r;
+  const dashoff = c - (pct / 100) * c;
+  const clr = pct === 100 ? "var(--green)" : "var(--blue)";
+  return `<div class="prog-ring-wrap">
+    <svg width="36" height="36" viewBox="0 0 36 36">
+      <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--border)" stroke-width="3"/>
+      <circle cx="18" cy="18" r="${r}" fill="none" stroke="${clr}" stroke-width="3"
+        stroke-dasharray="${c}" stroke-dashoffset="${dashoff}"
+        stroke-linecap="round"/>
+    </svg>
+    <div class="prog-ring-text">${pct}%</div>
+  </div>`;
+}
+
+function renderPriorities() {
+  const data  = load();
+  const list  = document.getElementById("priorityList");
+  const prios = [1,2,3]
+    .map(rank => ({ rank, p: data.projects.find(x => x.priority === rank) }))
+    .filter(x => x.p);
+
+  if (!prios.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">★</div>
+      Markiere Projekte als Priorität, um sie hier zu sehen.
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = prios.map(({ rank, p }) => {
+    const pct  = progressOf(p.tasks);
+    const done = p.status === "done";
+    return `<div class="priority-card ${done ? "done-card" : ""}" onclick="openProjectModal('${escH(p.id)}')">
+      <div class="priority-rank">${rank}</div>
+      <div class="priority-body">
+        <div class="priority-title">${escH(p.name)}</div>
+        ${p.value ? `<div class="priority-value">▸ ${escH(p.value)}</div>` : ""}
+      </div>
+      ${p.for ? `<span class="priority-for">${escH(p.for)}</span>` : ""}
+      <div class="priority-prog">
+        ${progressRingHTML(pct)}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderProjects() {
+  const data = load();
+  const list = document.getElementById("projectList");
+  let projs  = data.projects;
+
+  if (activeFilter !== "all") {
+    projs = projs.filter(p => p.status === activeFilter);
+  }
+
+  // Sort: priority first, then in_progress, then open, then done
+  const order = { 0:99 };
+  [1,2,3].forEach(n => order[n] = n);
+  projs = [...projs].sort((a,b) => {
+    const pa = a.priority || 99, pb = b.priority || 99;
+    if (pa !== pb) return pa - pb;
+    const so = { in_progress:0, open:1, blocked:2, done:3 };
+    return (so[a.status]||1) - (so[b.status]||1);
+  });
+
+  if (!projs.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">◻</div>
+      ${activeFilter !== "all"
+        ? "Keine Projekte mit diesem Status."
+        : "Noch keine Projekte. Starte mit <strong>+ Projekt</strong>."}
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = projs.map(p => {
+    const st      = STATUS_MAP[p.status] || STATUS_MAP.open;
+    const pct     = p.tasks.length ? progressOf(p.tasks) : (p.status === "done" ? 100 : 0);
+    const pColor  = progressColor(p.status);
+    const isPrio  = p.priority > 0;
+    const doneN   = p.tasks.filter(t => t.status === "done").length;
+    const taskCount = p.tasks.length;
+
+    const tasksHTML = p.tasks.map(t => {
+      const ts      = STATUS_MAP[t.status] || STATUS_MAP.open;
+      const checkCls = t.status === "done" ? "checked" : t.status === "in_progress" ? "inprogress" : "";
+      return `<div class="task-item">
+        <div class="task-check ${checkCls}"
+          onclick="cycleTaskStatus('${escH(p.id)}','${escH(t.id)}',event)"
+          title="Status wechseln"></div>
+        <div class="task-body">
+          <div class="task-title ${t.status === 'done' ? 'done-text' : ''}">${escH(t.name)}</div>
+          ${t.value ? `<div class="task-value">▸ ${escH(t.value)}</div>` : ""}
+          ${t.for   ? `<span class="task-for">${escH(t.for)}</span>` : ""}
+        </div>
+        <div class="task-right">
+          <span class="pill ${ts.cls}">${ts.label}</span>
+          <button class="btn-icon" onclick="openTaskModal('${escH(p.id)}','${escH(t.id)}')" title="Task bearbeiten">…</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    return `<div class="project-card ${isPrio ? "is-priority" : ""} ${p.open ? "open" : ""}" id="pc-${p.id}">
+      <div class="project-head" onclick="toggleProject('${escH(p.id)}')">
+        <span class="project-expand">▶</span>
+        <div class="project-info">
+          <div class="project-title-row">
+            ${isPrio ? `<span style="color:var(--blue);font-size:.8rem;font-weight:800">★${p.priority}</span>` : ""}
+            <span class="project-title">${escH(p.name)}</span>
+          </div>
+          <div class="project-meta">
+            ${p.value ? `<div class="meta-item"><span class="meta-label">Wert</span><span class="meta-value">${escH(p.value)}</span></div>` : ""}
+            ${p.for   ? `<div class="meta-item"><span class="meta-label">Für</span><span class="meta-value">${escH(p.for)}</span></div>`   : ""}
+          </div>
+          <div class="project-prog-row">
+            <div class="prog-bar-wrap">
+              <div class="prog-bar-fill ${pColor}" style="width:${pct}%"></div>
+            </div>
+            <span class="prog-count">${doneN}/${taskCount}</span>
+          </div>
+        </div>
+        <div class="project-actions">
+          <span class="pill ${st.cls}">${st.label}</span>
+          <button class="btn-icon" onclick="event.stopPropagation();openProjectModal('${escH(p.id)}')" title="Projekt bearbeiten">…</button>
+        </div>
+      </div>
+      <div class="task-list">
+        ${tasksHTML}
+        <div class="task-add-row">
+          <input type="text" class="task-quick-input" placeholder="Task hinzufügen…"
+            onkeydown="if(event.key==='Enter')addTaskQuick('${escH(p.id)}',this)"/>
+          <button class="btn btn-ghost btn-sm"
+            onclick="openTaskModal('${escH(p.id)}')">+ Details</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function render() {
+  renderSprint();
+  renderPriorities();
+  renderProjects();
+}
+
+// ================================================================
+//  MODAL HELPERS
+// ================================================================
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("open");
+}
+
+// Click outside to close
+document.querySelectorAll(".overlay").forEach(ov => {
+  ov.addEventListener("click", e => {
+    if (e.target === ov) ov.classList.remove("open");
+  });
+});
+// Keyboard shortcuts
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".overlay.open").forEach(ov => ov.classList.remove("open"));
+  }
+});
+
+// ================================================================
+//  BOOT — Seed mit Beispieldaten wenn leer
+// ================================================================
+
+(function boot() {
+  const data = load();
+
+  if (!data.projects.length) {
+    // Sprint Startdatum auf heute setzen
+    const today = new Date().toISOString().split("T")[0];
+    data.sprint.start = today;
+    data.sprint.name  = "Q1/Q2 2026";
+
+    data.projects = [
+      {
+        id: uid(), name: "KIS Optimierung", priority: 1,
+        value: "Effizientere klinische Dokumentation, weniger Doppelaufwand",
+        for: "Pflegepersonal / SPZ",
+        status: "in_progress", open: true,
+        tasks: [
+          { id: uid(), name: "Ist-Analyse bestehender Workflows", value: "Solide Ausgangsbasis für Massnahmen",        for: "Projektteam",     status: "done"        },
+          { id: uid(), name: "Gap-Analyse KIS vs. Anforderungen",  value: "Priorisierung der Entwicklungsthemen",     for: "Business Owner",  status: "in_progress" },
+          { id: uid(), name: "Anforderungsdokument erstellen",      value: "Klare Basis für IT-Umsetzung",            for: "Entwicklungsteam", status: "open"        },
+          { id: uid(), name: "Pilottest mit Pflegestation",         value: "Validierung vor Roll-out",                for: "Pflegepersonal",   status: "open"        },
+        ]
+      },
+      {
+        id: uid(), name: "Budget Q2 — SPZ Digital", priority: 2,
+        value: "Sichere Finanzierungsbasis für Digitalisierungsprojekte",
+        for: "Geschäftsleitung / Finance",
+        status: "in_progress", open: false,
+        tasks: [
+          { id: uid(), name: "Kostenstellen-Review Q1",   value: "Transparenz über IST-Ausgaben",    for: "Finance",    status: "done" },
+          { id: uid(), name: "Budgetplanung Q2 aufsetzen", value: "Ressourcenzuteilung für Projekte", for: "Projektleiter", status: "in_progress" },
+          { id: uid(), name: "Genehmigung GL einholen",   value: "Formale Freigabe Investitionen",   for: "Alle Projekte", status: "open" },
+        ]
+      },
+      {
+        id: uid(), name: "Stakeholder Alignment KIS", priority: 3,
+        value: "Akzeptanz und Commitment aller Beteiligten sicherstellen",
+        for: "Projektteam / Klinik",
+        status: "open", open: false,
+        tasks: [
+          { id: uid(), name: "Workshop Pflege & Ärzte planen",    value: "Frühe Einbindung vermeidet Widerstand",   for: "Change Management", status: "open" },
+          { id: uid(), name: "Kommunikationsplan erstellen",      value: "Transparente Projektkommunikation",       for: "Alle Stakeholder",  status: "open" },
+        ]
+      },
+      {
+        id: uid(), name: "Prozessdokumentation SPZ", priority: 0,
+        value: "Verlässliche Wissensbasis für Onboarding und Audits",
+        for: "Qualitätsmanagement / neue Mitarbeitende",
+        status: "open", open: false,
+        tasks: [
+          { id: uid(), name: "Prozesslandkarte aktualisieren",   value: "Aktueller Stand dokumentiert",    for: "QM",            status: "open" },
+          { id: uid(), name: "3 Kernprozesse verschriftlichen",  value: "Wissen sichern und zugänglich machen", for: "Alle Teams", status: "open" },
+        ]
+      },
+    ];
+    save(data);
+  }
+
+  render();
+
+  // Auto-refresh every 60s (für Sprint-Bar)
+  setInterval(renderSprint, 60000);
+})();
+</script>
+</body>
+</html>
