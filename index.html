@@ -484,7 +484,7 @@
   <!-- PRIORITÄTEN -->
   <div class="section">
     <div class="sec-head">
-      <span class="sec-title">Top Prioritäten</span>
+      <span class="sec-title">Top 5 Prioritäten</span>
     </div>
     <div class="priority-list" id="priorityList">
       <div class="empty-state">
@@ -583,6 +583,8 @@
             <option value="1">★ Priorität 1</option>
             <option value="2">★ Priorität 2</option>
             <option value="3">★ Priorität 3</option>
+            <option value="4">★ Priorität 4</option>
+            <option value="5">★ Priorität 5</option>
           </select>
         </div>
       </div>
@@ -956,7 +958,7 @@ function progressRingHTML(pct, color) {
 function renderPriorities() {
   const data  = load();
   const list  = document.getElementById("priorityList");
-  const prios = [1,2,3]
+  const prios = [1,2,3,4,5]
     .map(rank => ({ rank, p: data.projects.find(x => x.priority === rank) }))
     .filter(x => x.p);
 
@@ -996,7 +998,7 @@ function renderProjects() {
 
   // Sort: priority first, then in_progress, then open, then done
   const order = { 0:99 };
-  [1,2,3].forEach(n => order[n] = n);
+  [1,2,3,4,5].forEach(n => order[n] = n);
   projs = [...projs].sort((a,b) => {
     const pa = a.priority || 99, pb = b.priority || 99;
     if (pa !== pb) return pa - pb;
